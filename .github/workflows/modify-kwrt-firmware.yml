@@ -40,7 +40,7 @@ jobs:
         echo "=== 解压 SquashFS ==="
         cd firmware_work
         mkdir -p rootfs
-        unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root
+        unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root 2>&1 || true
         ls -la rootfs/
 
     - name: Modify Network Config
