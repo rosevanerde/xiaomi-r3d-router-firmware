@@ -14,7 +14,7 @@ env:
 jobs:
   modify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     
     steps:
     - name: Install Dependencies
@@ -43,27 +43,133 @@ jobs:
         unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root 2>&1 || true
         ls -la rootfs/
 
+    - name: Show Original Configs
+      run: |
+        echo "=== 原始网络配置 ==="
+        cd firmware_work
+        cat rootfs/etc/config/network 2>/dev/null || echo "File not found"
+        echo ""
+        echo "=== 原始防火墙配置 ==="
+        cat rootfs/etc/config/firewall 2>/dev/null || echo "File not found"
+
     - name: Modify Network Config
       run: |
         cd firmware_work
-        cp rootfs/etc/config/network rootfs/etc/config/network.backup 2>/dev/null || true
-        printf "config interface 'loopback'\n    option device 'lo'\n    option proto 'static'\n    option ipaddr '127.0.0.1'\n    option netmask '255.0.0.0'\n\nconfig globals 'globals'\n    option ula_prefix 'auto'\n\nconfig interface 'wan'\n    option device 'eth0'\n    option proto 'dhcp'\n    option ipv6 'auto'\n\nconfig interface 'wan6'\n    option device '@wan'\n    option proto 'dhcpv6'\n\nconfig interface 'lan'\n    option device 'br-lan'\n    option proto 'static'\n    option ipaddr '192.168.1.1'\n    option netmask '255.255.255.0'\n    option ip6assign '60'\n\nconfig device\n    option name 'br-lan'\n    option type 'bridge'\n    list ports 'eth1'\n    list ports 'eth2'\n    list ports 'eth3'\n\nconfig dhcp 'lan'\n    option interface 'lan'\n    option start '100'\n    option limit '150'\n    option leasetime '12h'\n\nconfig dhcp 'wan'\n    option interface 'wan'\n    option ignore '1'\n" > rootfs/etc/config/network
-        echo "Done: network config"
+        cat > rootfs/etc/config/network << 'NETEOF'
+config interface 'loopback'
+    option device 'lo'
+    option proto 'static'
+    option ipaddr '127.0.0.1'
+    option netmask '255.0.0.0'
+
+config globals 'globals'
+    option ula_prefix 'auto'
+
+config interface 'wan'
+    option device 'eth0'
+    option proto 'dhcp'
+    option ipv6 'auto'
+
+config interface 'wan6'
+    option device '@wan'
+    option proto 'dhcpv6'
+
+config interface 'lan'
+    option device 'br-lan'
+    option proto 'static'
+    option ipaddr '192.168.1.1'
+    option netmask '255.255.255.0'
+    option ip6assign '60'
+
+config device
+    option name 'br-lan'
+    option type 'bridge'
+    list ports 'eth1'
+    list ports 'eth2'
+    list ports 'eth3'
+
+config dhcp 'lan'
+    option interface 'lan'
+    option start '100'
+    option limit '150'
+    option leasetime '12h'
+    option ignore '0'
+
+config dhcp 'wan'
+    option interface 'wan'
+    option ignore '1'
+NETEOF
+        ls -lh rootfs/etc/config/network
+        cat rootfs/etc/config/network
 
     - name: Modify Firewall Config
       run: |
         cd firmware_work
-        cp rootfs/etc/config/firewall rootfs/etc/config/firewall.backup 2>/dev/null || true
-        printf "config defaults\n    option syn_flood '1'\n    option input 'REJECT'\n    option output 'ACCEPT'\n    option forward 'REJECT'\n\nconfig zone\n    option name 'lan'\n    list network 'lan'\n    option input 'ACCEPT'\n    option output 'ACCEPT'\n    option forward 'ACCEPT'\n\nconfig zone\n    option name 'wan'\n    list network 'wan'\n    list network 'wan6'\n    option input 'REJECT'\n    option output 'ACCEPT'\n    option forward 'REJECT'\n    option masq '1'\n    option mtu_fix '1'\n\nconfig forwarding\n    option src 'lan'\n    option dest 'wan'\n" > rootfs/etc/config/firewall
-        echo "Done: firewall config"
+        cat > rootfs/etc/config/firewall << 'FWEOF'
+config defaults
+    option syn_flood '1'
+    option input 'REJECT'
+    option output 'ACCEPT'
+    option forward 'REJECT'
+
+config zone
+    option name 'lan'
+    list network 'lan'
+    option input 'ACCEPT'
+    option output 'ACCEPT'
+    option forward 'ACCEPT'
+
+config zone
+    option name 'wan'
+    list network 'wan'
+    list network 'wan6'
+    option input 'REJECT'
+    option output 'ACCEPT'
+    option forward 'REJECT'
+    option masq '1'
+    option mtu_fix '1'
+
+config forwarding
+    option src 'lan'
+    option dest 'wan'
+FWEOF
+        ls -lh rootfs/etc/config/firewall
+        cat rootfs/etc/config/firewall
+
+    - name: Modify Wireless Config
+      run: |
+        cd firmware_work
+        if [ -f rootfs/etc/config/wireless ]; then
+            echo "=== 修改无线配置 ==="
+            cp rootfs/etc/config/wireless rootfs/etc/config/wireless.backup
+            cat rootfs/etc/config/wireless | sed -e "s/disabled='1'/disabled='0'/g" -e "s/ssid='[^']*'/ssid='Xiaomi_R3D_5G'/g" -e "s/encryption='[^']*'/encryption='psk2'/g" -e "s/key='[^']*'/key='12345678'/g" > rootfs/etc/config/wireless.new
+            mv rootfs/etc/config/wireless.new rootfs/etc/config/wireless
+            ls -lh rootfs/etc/config/wireless
+            cat rootfs/etc/config/wireless
+        fi
 
     - name: Add First Boot Script
       run: |
         cd firmware_work
         mkdir -p rootfs/etc/uci-defaults
-        printf '#!/bin/sh\nsleep 3\nif [ ! -f /etc/.router_mode_configured ]; then\n    uci set system.@system[0].hostname="Xiaomi-R3D-Router"\n    uci set network.wan=interface\n    uci set network.wan.proto="dhcp"\n    uci set network.wan.device="eth0"\n    uci set network.lan.proto="static"\n    uci set network.lan.ipaddr="192.168.1.1"\n    uci set network.lan.netmask="255.255.255.0"\n    uci set dhcp.lan.ignore="0"\n    uci set dhcp.lan.start="100"\n    uci set dhcp.lan.limit="150"\n    uci set firewall.@zone[1].masq="1"\n    uci commit system\n    uci commit network\n    uci commit dhcp\n    uci commit firewall\n    passwd -d root\n    touch /etc/.router_mode_configured\n    /etc/init.d/network restart\nfi\n' > rootfs/etc/uci-defaults/99-router-mode
+        cat > rootfs/etc/uci-defaults/99-router-mode << 'SCRIPTEOF'
+#!/bin/sh
+echo "[Router Mode] First boot script running..."
+touch /etc/.router_mode_configured
+echo "[Router Mode] Done"
+SCRIPTEOF
         chmod +x rootfs/etc/uci-defaults/99-router-mode
-        echo "Done: first boot script"
+        ls -lh rootfs/etc/uci-defaults/
+
+    - name: Verify Configs
+      run: |
+        cd firmware_work
+        echo "=== 验证配置文件 ==="
+        echo "Network config:"
+        cat rootfs/etc/config/network
+        echo ""
+        echo "Firewall config:"
+        cat rootfs/etc/config/firewall
 
     - name: Repack Firmware
       run: |
@@ -81,7 +187,7 @@ jobs:
     - name: Upload Firmware
       uses: actions/upload-artifact@v4
       with:
-        name: kwrt-router-mode-firmware
+        name: kwrt-router-mode-firmware-v2
         path: |
           ${{ env.OUTPUT_FIRMWARE }}
           ${{ env.OUTPUT_FIRMWARE }}.sha256
