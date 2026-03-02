@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       firmware_url:
-        description: 'Kwrt 固件下载链接 (留空使用默认)'
+        description: 'Kwrt 固件下载链接 (留空使用仓库中的固件)'
         required: false
         default: ''
 
@@ -19,20 +19,18 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        lfs: true
 
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          squashfs-tools \
-          tar \
-          wget \
-          curl
+        sudo apt-get install -y squashfs-tools tar wget curl
 
-    - name: Download Kwrt Firmware
+    - name: Download or Verify Firmware
       run: |
         echo "========================================"
-        echo "下载 Kwrt 固件"
+        echo "检查 Kwrt 固件"
         echo "========================================"
         
         # 如果有提供 URL，使用提供的 URL
@@ -40,11 +38,12 @@ jobs:
           echo "从提供的链接下载..."
           wget -O "$FIRMWARE_FILE" "${{ github.event.inputs.firmware_url }}"
         else
-          # 尝试从仓库中查找固件
+          # 检查仓库中的固件
           if [ -f "$FIRMWARE_FILE" ]; then
             echo "使用仓库中的固件文件"
+            ls -lh "$FIRMWARE_FILE"
           else
-            echo "错误: 未找到固件文件"
+            echo "错误: 未找到固件文件 $FIRMWARE_FILE"
             echo "请上传固件到仓库，或提供下载链接"
             exit 1
           fi
@@ -53,6 +52,7 @@ jobs:
         echo ""
         echo "固件信息:"
         ls -lh "$FIRMWARE_FILE"
+        file "$FIRMWARE_FILE"
 
     - name: Extract Firmware
       run: |
@@ -85,6 +85,9 @@ jobs:
         
         cd firmware_work
         
+        # 检查 sysupgrade 目录
+        ls -la sysupgrade-xiaomi_r3d/ || ls -la
+        
         # 解压 rootfs
         mkdir -p rootfs
         echo "解压 squashfs..."
@@ -109,57 +112,57 @@ jobs:
         # 写入新的网络配置
         cat > rootfs/etc/config/network << 'EOF'
 config interface 'loopback'
-    option device 'lo'
-    option proto 'static'
-    option ipaddr '127.0.0.1'
-    option netmask '255.0.0.0'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
 
 config globals 'globals'
-    option ula_prefix 'auto'
+	option ula_prefix 'auto'
 
 config interface 'wan'
-    option device 'eth0'
-    option proto 'dhcp'
-    option ipv6 'auto'
+	option device 'eth0'
+	option proto 'dhcp'
+	option ipv6 'auto'
 
 config interface 'wan6'
-    option device '@wan'
-    option proto 'dhcpv6'
+	option device '@wan'
+	option proto 'dhcpv6'
 
 config interface 'lan'
-    option device 'br-lan'
-    option proto 'static'
-    option ipaddr '192.168.1.1'
-    option netmask '255.255.255.0'
-    option ip6assign '60'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '192.168.1.1'
+	option netmask '255.255.255.0'
+	option ip6assign '60'
 
 config device
-    option name 'br-lan'
-    option type 'bridge'
-    list ports 'eth1'
-    list ports 'eth2'
-    list ports 'eth3'
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'eth1'
+	list ports 'eth2'
+	list ports 'eth3'
 
 config dhcp 'lan'
-    option interface 'lan'
-    option start '100'
-    option limit '150'
-    option leasetime '12h'
-    option dhcpv4 'server'
-    option dhcpv6 'server'
-    option ra 'server'
-    list ra_flags 'managed-config'
-    list ra_flags 'other-config'
+	option interface 'lan'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	option dhcpv4 'server'
+	option dhcpv6 'server'
+	option ra 'server'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
 
 config dhcp 'wan'
-    option interface 'wan'
-    option ignore '1'
+	option interface 'wan'
+	option ignore '1'
 
 config odhcpd 'odhcpd'
-    option maindhcp '0'
-    option leasefile '/tmp/hosts/odhcpd'
-    option leasetrigger '/usr/sbin/odhcpd-update'
-    option loglevel '4'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
 EOF
         
         echo "✓ 网络配置已修改"
@@ -179,129 +182,129 @@ EOF
         # 写入新的防火墙配置
         cat > rootfs/etc/config/firewall << 'EOF'
 config defaults
-    option syn_flood '1'
-    option input 'REJECT'
-    option output 'ACCEPT'
-    option forward 'REJECT'
+	option syn_flood '1'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
 
 config zone
-    option name 'lan'
-    list network 'lan'
-    option input 'ACCEPT'
-    option output 'ACCEPT'
-    option forward 'ACCEPT'
+	option name 'lan'
+	list network 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
 
 config zone
-    option name 'wan'
-    list network 'wan'
-    list network 'wan6'
-    option input 'REJECT'
-    option output 'ACCEPT'
-    option forward 'REJECT'
-    option masq '1'
-    option mtu_fix '1'
+	option name 'wan'
+	list network 'wan'
+	list network 'wan6'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option masq '1'
+	option mtu_fix '1'
 
 config forwarding
-    option src 'lan'
-    option dest 'wan'
+	option src 'lan'
+	option dest 'wan'
 
 config rule
-    option name 'Allow-DHCP-Renew'
-    option src 'wan'
-    option proto 'udp'
-    option dest_port '68'
-    option target 'ACCEPT'
-    option family 'ipv4'
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
 
 config rule
-    option name 'Allow-Ping'
-    option src 'wan'
-    option proto 'icmp'
-    option icmp_type 'echo-request'
-    option family 'ipv4'
-    option target 'ACCEPT'
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-IGMP'
-    option src 'wan'
-    option proto 'igmp'
-    option family 'ipv4'
-    option target 'ACCEPT'
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-DHCPv6'
-    option src 'wan'
-    option proto 'udp'
-    option src_ip 'fc00::/6'
-    option dest_ip 'fc00::/6'
-    option dest_port '546'
-    option family 'ipv6'
-    option target 'ACCEPT'
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option src_ip 'fc00::/6'
+	option dest_ip 'fc00::/6'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-MLD'
-    option src 'wan'
-    option proto 'icmp'
-    option src_ip 'fe80::/10'
-    list icmp_type '130/0'
-    list icmp_type '131/0'
-    list icmp_type '132/0'
-    list icmp_type '143/0'
-    option family 'ipv6'
-    option target 'ACCEPT'
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-ICMPv6-Input'
-    option src 'wan'
-    option proto 'icmp'
-    list icmp_type 'echo-request'
-    list icmp_type 'echo-reply'
-    list icmp_type 'destination-unreachable'
-    list icmp_type 'packet-too-big'
-    list icmp_type 'time-exceeded'
-    list icmp_type 'bad-header'
-    list icmp_type 'unknown-header-type'
-    list icmp_type 'router-solicitation'
-    list icmp_type 'neighbour-solicitation'
-    list icmp_type 'router-advertisement'
-    list icmp_type 'neighbour-advertisement'
-    option limit '1000/sec'
-    option family 'ipv6'
-    option target 'ACCEPT'
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-ICMPv6-Forward'
-    option src 'wan'
-    option dest '*'
-    option proto 'icmp'
-    list icmp_type 'echo-request'
-    list icmp_type 'echo-reply'
-    list icmp_type 'destination-unreachable'
-    list icmp_type 'packet-too-big'
-    list icmp_type 'time-exceeded'
-    list icmp_type 'bad-header'
-    list icmp_type 'unknown-header-type'
-    option limit '1000/sec'
-    option family 'ipv6'
-    option target 'ACCEPT'
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-IPSec-ESP'
-    option src 'wan'
-    option dest 'lan'
-    option proto 'esp'
-    option target 'ACCEPT'
+	option name 'Allow-IPSec-ESP'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
 
 config rule
-    option name 'Allow-ISAKMP'
-    option src 'wan'
-    option dest 'lan'
-    option dest_port '500'
-    option proto 'udp'
-    option target 'ACCEPT'
+	option name 'Allow-ISAKMP'
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
 
 config include
-    option path '/etc/firewall.user'
+	option path '/etc/firewall.user'
 EOF
         
         echo "✓ 防火墙配置已修改"
@@ -454,55 +457,6 @@ EOF
         echo "SHA256 校验值:"
         cat "${OUTPUT_FIRMWARE}.sha256"
 
-    - name: Create Release Notes
-      run: |
-        cat > RELEASE_NOTES.md << 'EOF'
-        # Kwrt 路由模式固件
-        
-        ## 修改内容
-        
-        - ✅ WAN 口: DHCP 客户端
-        - ✅ LAN IP: 192.168.1.1
-        - ✅ DHCP: 启用 (100-250)
-        - ✅ NAT: 启用
-        - ✅ 防火墙: 允许转发
-        - ✅ 首次启动脚本: 确保路由模式
-        - ✅ 中科大镜像源: 国内加速
-        - ✅ WiFi: 默认启用，密码 12345678
-        
-        ## 刷机方法
-        
-        ```bash
-        sysupgrade -n /tmp/kwrt-02.22.2026-r3d-router-mode-sysupgrade.bin
-        ```
-        
-        ## 默认配置
-        
-        | 配置项 | 值 |
-        |--------|-----|
-        | LAN IP | 192.168.1.1 |
-        | WAN 模式 | DHCP 客户端 |
-        | DHCP | 启用 |
-        | WiFi 5G | Xiaomi_R3D_5G |
-        | WiFi 2.4G | Xiaomi_R3D_2.4G |
-        | WiFi 密码 | 12345678 |
-        | 管理密码 | 空 |
-        
-        ## 特点
-        
-        - 恢复出厂设置后**仍保持路由模式**
-        - 首次启动自动配置
-        - 内置中科大镜像源
-        
-        ## 注意事项
-        
-        - 刷机有风险，请确保电源稳定
-        - 首次启动可能需要 2-3 分钟
-        - 建议首次登录后立即修改 root 密码
-        EOF
-        
-        cat RELEASE_NOTES.md
-
     - name: Upload Firmware
       uses: actions/upload-artifact@v4
       with:
@@ -510,22 +464,7 @@ EOF
         path: |
           ${{ env.OUTPUT_FIRMWARE }}
           ${{ env.OUTPUT_FIRMWARE }}.sha256
-          RELEASE_NOTES.md
         retention-days: 30
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: kwrt-router-mode-${{ github.run_number }}
-        name: Kwrt R3D 路由模式固件 ${{ github.run_number }}
-        body_path: RELEASE_NOTES.md
-        files: |
-          ${{ env.OUTPUT_FIRMWARE }}
-          ${{ env.OUTPUT_FIRMWARE }}.sha256
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Summary
       run: |
