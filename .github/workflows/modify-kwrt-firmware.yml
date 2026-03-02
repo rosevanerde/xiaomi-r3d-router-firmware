@@ -21,165 +21,104 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y squashfs-tools tar wget curl gzip xz-utils
 
     - name: Download Firmware
-      run: |
-        echo "=== 下载固件 ==="
-        wget -O original.bin "${{ github.event.inputs.firmware_url }}"
-        ls -lh original.bin
+      run: wget -O original.bin "${{ github.event.inputs.firmware_url }}" && ls -lh original.bin
 
     - name: Extract Firmware
-      run: |
-        echo "=== 提取固件 ==="
-        mkdir -p firmware_work
-        cd firmware_work
-        cp ../original.bin .
-        tar -xf original.bin
-        ls -la
+      run: mkdir -p firmware_work && cd firmware_work && cp ../original.bin . && tar -xf original.bin && ls -la
 
     - name: Extract SquashFS
-      run: |
-        echo "=== 解压 SquashFS ==="
-        cd firmware_work
-        mkdir -p rootfs
-        unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root 2>&1 || true
-        ls -la rootfs/
+      run: cd firmware_work && mkdir -p rootfs && unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root 2>&1 || true && ls -la rootfs/
 
-    - name: Show Original Configs
+    - name: Show and Modify Configs
       run: |
-        echo "=== 原始网络配置 ==="
         cd firmware_work
-        cat rootfs/etc/config/network 2>/dev/null || echo "File not found"
+        echo "=== Original network ==="
+        cat rootfs/etc/config/network || echo "Not found"
         echo ""
-        echo "=== 原始防火墙配置 ==="
-        cat rootfs/etc/config/firewall 2>/dev/null || echo "File not found"
-
-    - name: Modify Network Config
-      run: |
-        cd firmware_work
-        cat > rootfs/etc/config/network << 'NETEOF'
-config interface 'loopback'
-    option device 'lo'
-    option proto 'static'
-    option ipaddr '127.0.0.1'
-    option netmask '255.0.0.0'
-
-config globals 'globals'
-    option ula_prefix 'auto'
-
-config interface 'wan'
-    option device 'eth0'
-    option proto 'dhcp'
-    option ipv6 'auto'
-
-config interface 'wan6'
-    option device '@wan'
-    option proto 'dhcpv6'
-
-config interface 'lan'
-    option device 'br-lan'
-    option proto 'static'
-    option ipaddr '192.168.1.1'
-    option netmask '255.255.255.0'
-    option ip6assign '60'
-
-config device
-    option name 'br-lan'
-    option type 'bridge'
-    list ports 'eth1'
-    list ports 'eth2'
-    list ports 'eth3'
-
-config dhcp 'lan'
-    option interface 'lan'
-    option start '100'
-    option limit '150'
-    option leasetime '12h'
-    option ignore '0'
-
-config dhcp 'wan'
-    option interface 'wan'
-    option ignore '1'
-NETEOF
-        ls -lh rootfs/etc/config/network
-        cat rootfs/etc/config/network
-
-    - name: Modify Firewall Config
-      run: |
-        cd firmware_work
-        cat > rootfs/etc/config/firewall << 'FWEOF'
-config defaults
-    option syn_flood '1'
-    option input 'REJECT'
-    option output 'ACCEPT'
-    option forward 'REJECT'
-
-config zone
-    option name 'lan'
-    list network 'lan'
-    option input 'ACCEPT'
-    option output 'ACCEPT'
-    option forward 'ACCEPT'
-
-config zone
-    option name 'wan'
-    list network 'wan'
-    list network 'wan6'
-    option input 'REJECT'
-    option output 'ACCEPT'
-    option forward 'REJECT'
-    option masq '1'
-    option mtu_fix '1'
-
-config forwarding
-    option src 'lan'
-    option dest 'wan'
-FWEOF
-        ls -lh rootfs/etc/config/firewall
-        cat rootfs/etc/config/firewall
-
-    - name: Modify Wireless Config
-      run: |
-        cd firmware_work
-        if [ -f rootfs/etc/config/wireless ]; then
-            echo "=== 修改无线配置 ==="
-            cp rootfs/etc/config/wireless rootfs/etc/config/wireless.backup
-            cat rootfs/etc/config/wireless | sed -e "s/disabled='1'/disabled='0'/g" -e "s/ssid='[^']*'/ssid='Xiaomi_R3D_5G'/g" -e "s/encryption='[^']*'/encryption='psk2'/g" -e "s/key='[^']*'/key='12345678'/g" > rootfs/etc/config/wireless.new
-            mv rootfs/etc/config/wireless.new rootfs/etc/config/wireless
-            ls -lh rootfs/etc/config/wireless
-            cat rootfs/etc/config/wireless
-        fi
-
-    - name: Add First Boot Script
-      run: |
-        cd firmware_work
-        mkdir -p rootfs/etc/uci-defaults
-        cat > rootfs/etc/uci-defaults/99-router-mode << 'SCRIPTEOF'
-#!/bin/sh
-echo "[Router Mode] First boot script running..."
-touch /etc/.router_mode_configured
-echo "[Router Mode] Done"
-SCRIPTEOF
-        chmod +x rootfs/etc/uci-defaults/99-router-mode
-        ls -lh rootfs/etc/uci-defaults/
-
-    - name: Verify Configs
-      run: |
-        cd firmware_work
-        echo "=== 验证配置文件 ==="
-        echo "Network config:"
-        cat rootfs/etc/config/network
+        
+        echo "=== Creating network config ==="
+        echo "config interface 'loopback'" > rootfs/etc/config/network
+        echo "    option device 'lo'" >> rootfs/etc/config/network
+        echo "    option proto 'static'" >> rootfs/etc/config/network
+        echo "    option ipaddr '127.0.0.1'" >> rootfs/etc/config/network
+        echo "    option netmask '255.0.0.0'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config globals 'globals'" >> rootfs/etc/config/network
+        echo "    option ula_prefix 'auto'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config interface 'wan'" >> rootfs/etc/config/network
+        echo "    option device 'eth0'" >> rootfs/etc/config/network
+        echo "    option proto 'dhcp'" >> rootfs/etc/config/network
+        echo "    option ipv6 'auto'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config interface 'wan6'" >> rootfs/etc/config/network
+        echo "    option device '@wan'" >> rootfs/etc/config/network
+        echo "    option proto 'dhcpv6'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config interface 'lan'" >> rootfs/etc/config/network
+        echo "    option device 'br-lan'" >> rootfs/etc/config/network
+        echo "    option proto 'static'" >> rootfs/etc/config/network
+        echo "    option ipaddr '192.168.1.1'" >> rootfs/etc/config/network
+        echo "    option netmask '255.255.255.0'" >> rootfs/etc/config/network
+        echo "    option ip6assign '60'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config device" >> rootfs/etc/config/network
+        echo "    option name 'br-lan'" >> rootfs/etc/config/network
+        echo "    option type 'bridge'" >> rootfs/etc/config/network
+        echo "    list ports 'eth1'" >> rootfs/etc/config/network
+        echo "    list ports 'eth2'" >> rootfs/etc/config/network
+        echo "    list ports 'eth3'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config dhcp 'lan'" >> rootfs/etc/config/network
+        echo "    option interface 'lan'" >> rootfs/etc/config/network
+        echo "    option start '100'" >> rootfs/etc/config/network
+        echo "    option limit '150'" >> rootfs/etc/config/network
+        echo "    option leasetime '12h'" >> rootfs/etc/config/network
+        echo "    option ignore '0'" >> rootfs/etc/config/network
+        echo "" >> rootfs/etc/config/network
+        echo "config dhcp 'wan'" >> rootfs/etc/config/network
+        echo "    option interface 'wan'" >> rootfs/etc/config/network
+        echo "    option ignore '1'" >> rootfs/etc/config/network
+        
         echo ""
-        echo "Firewall config:"
+        echo "=== New network config ==="
+        cat rootfs/etc/config/network
+        
+        echo ""
+        echo "=== Creating firewall config ==="
+        echo "config defaults" > rootfs/etc/config/firewall
+        echo "    option syn_flood '1'" >> rootfs/etc/config/firewall
+        echo "    option input 'REJECT'" >> rootfs/etc/config/firewall
+        echo "    option output 'ACCEPT'" >> rootfs/etc/config/firewall
+        echo "    option forward 'REJECT'" >> rootfs/etc/config/firewall
+        echo "" >> rootfs/etc/config/firewall
+        echo "config zone" >> rootfs/etc/config/firewall
+        echo "    option name 'lan'" >> rootfs/etc/config/firewall
+        echo "    list network 'lan'" >> rootfs/etc/config/firewall
+        echo "    option input 'ACCEPT'" >> rootfs/etc/config/firewall
+        echo "    option output 'ACCEPT'" >> rootfs/etc/config/firewall
+        echo "    option forward 'ACCEPT'" >> rootfs/etc/config/firewall
+        echo "" >> rootfs/etc/config/firewall
+        echo "config zone" >> rootfs/etc/config/firewall
+        echo "    option name 'wan'" >> rootfs/etc/config/firewall
+        echo "    list network 'wan'" >> rootfs/etc/config/firewall
+        echo "    list network 'wan6'" >> rootfs/etc/config/firewall
+        echo "    option input 'REJECT'" >> rootfs/etc/config/firewall
+        echo "    option output 'ACCEPT'" >> rootfs/etc/config/firewall
+        echo "    option forward 'REJECT'" >> rootfs/etc/config/firewall
+        echo "    option masq '1'" >> rootfs/etc/config/firewall
+        echo "    option mtu_fix '1'" >> rootfs/etc/config/firewall
+        echo "" >> rootfs/etc/config/firewall
+        echo "config forwarding" >> rootfs/etc/config/firewall
+        echo "    option src 'lan'" >> rootfs/etc/config/firewall
+        echo "    option dest 'wan'" >> rootfs/etc/config/firewall
+        
+        echo ""
+        echo "=== New firewall config ==="
         cat rootfs/etc/config/firewall
 
     - name: Repack Firmware
-      run: |
-        cd firmware_work
-        mksquashfs rootfs new_rootfs.squashfs -comp xz -b 262144
-        mkdir -p sysupgrade-xiaomi_r3d
-        mv new_rootfs.squashfs sysupgrade-xiaomi_r3d/root
-        tar -cf "../$OUTPUT_FIRMWARE" sysupgrade-xiaomi_r3d/
-        cd ..
-        ls -lh "$OUTPUT_FIRMWARE"
+      run: cd firmware_work && mksquashfs rootfs new_rootfs.squashfs -comp xz -b 262144 && mkdir -p sysupgrade-xiaomi_r3d && mv new_rootfs.squashfs sysupgrade-xiaomi_r3d/root && tar -cf "../$OUTPUT_FIRMWARE" sysupgrade-xiaomi_r3d/ && cd .. && ls -lh "$OUTPUT_FIRMWARE"
 
     - name: Generate Checksum
       run: sha256sum "$OUTPUT_FIRMWARE" > "${OUTPUT_FIRMWARE}.sha256" && cat "${OUTPUT_FIRMWARE}.sha256"
@@ -187,14 +126,11 @@ SCRIPTEOF
     - name: Upload Firmware
       uses: actions/upload-artifact@v4
       with:
-        name: kwrt-router-mode-firmware-v2
+        name: kwrt-router-mode-firmware-v3
         path: |
           ${{ env.OUTPUT_FIRMWARE }}
           ${{ env.OUTPUT_FIRMWARE }}.sha256
         retention-days: 30
 
     - name: Summary
-      run: |
-        echo "=== 修改完成 ==="
-        ls -lh "$OUTPUT_FIRMWARE"
-        cat "${OUTPUT_FIRMWARE}.sha256"
+      run: ls -lh "$OUTPUT_FIRMWARE" && cat "${OUTPUT_FIRMWARE}.sha256"
