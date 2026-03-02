@@ -10,6 +10,8 @@ on:
 
 env:
   OUTPUT_FIRMWARE: "kwrt-02.22.2026-r3d-router-mode-sysupgrade.bin"
+  NETWORK_CONFIG_BASE64: "Y29uZmlnIGludGVyZmFjZSAnbG9vcGJhY2snCiAgICBvcHRpb24gZGV2aWNlICdsbycKICAgIG9wdGlvbiBwcm90byAnc3RhdGljJwogICAgb3B0aW9uIGlwYWRkciAnMTI3LjAuMC4xJwogICAgb3B0aW9uIG5ldG1hc2sgJzI1NS4wLjAuMCcKCmNvbmZpZyBnbG9iYWxzICdnbG9iYWxzJwogICAgb3B0aW9uIHVsYV9wcmVmaXcgJ2F1dG8nCgpjb25maWcgaW50ZXJmYWNlICd3YW4nCiAgICBvcHRpb24gZGV2aWNlICdldGgwJwogICAgb3B0aW9uIHByb3RvICdkaGNwJwogICAgb3B0aW9uIGlwdjYgJ2F1dG8nCgpjb25maWcgaW50ZXJmYWNlICd3YW42JwogICAgb3B0aW9uIGRldmljZSAnQHdhbicKICAgIG9wdGlvbiBwcm90byAnZGhjcHY2JwoKY29uZmlnIGludGVyZmFjZSAnbGFuJwogICAgb3B0aW9uIGRldmljZSAnYnItbGFuJwogICAgb3B0aW9uIHByb3RvICdzdGF0aWMnCiAgICBvcHRpb24gaXBhZGRyICcxOTIuMTY4LjEuMScKICAgIG9wdGlvbiBuZXRtYXNrICcyNTUuMjU1LjI1NS4wJwogICAgb3B0aW9uIGlwNmFzc2lnbic2MCcKCmNvbmZpZyBkZXZpY2UKICAgIG9wdGlvbiBuYW1lICdici1sYW4nCiAgICBvcHRpb24gdHlwZSAnYnJpZGdlJwogICAgbGlzdCBwb3J0cyAnZXRoMScKICAgIGxpc3QgcG9ydHMgJ2V0aDInCiAgICBsaXN0IHBvcnRzICdldGgzJwoKY29uZmlnIGRoY3AgJ2xhbicKICAgIG9wdGlvbiBpbnRlcmZhY2UgJ2xhbicKICAgIG9wdGlvbiBzdGFydCAnMTAwJwogICAgb3B0aW9uIGxpbWl0ICcxNTAnCiAgICBvcHRpb24gbGVhc2V0aW1lICcxMmgnCiAgICBvcHRpb24gaWdub3JlICcwJwoKY29uZmlnIGRoY3AgJ3dhbicKICAgIG9wdGlvbiBpbnRlcmZhY2UgJ3dhbicKICAgIG9wdGlvbiBpZ25vcmUgJzEnCg=="
+  FIREWALL_CONFIG_BASE64: "Y29uZmlnIGRlZmF1bHRzCiAgICBvcHRpb24gc3luX2Zsb29kICcxJwogICAgb3B0aW9uIGlucHV0ICdSRUpFQ1QnCiAgICBvcHRpb24gb3V0cHV0ICdBQ0NFUFQnCiAgICBvcHRpb24gZm9yd2FyZCAnUkVKRUNUJwoKY29uZmlnIHpvbmUKICAgIG9wdGlvbiBuYW1lICdsYW4nCiAgICBsaXN0IG5ldHdvcmsgJ2xhbicKICAgIG9wdGlvbiBpbnB1dCAnQUNDRVBUJwogICAgb3B0aW9uIG91dHB1dCAnQUNDRVBUJwogICAgb3B0aW9uIGZvcndhcmQgJ0FDQ0VQVCcKCmNvbmZpZyB6b25lCiAgICBvcHRpb24gbmFtZSAnd2FuJwogICAgbGlzdCBuZXR3b3JrICd3YW4nCiAgICBsaXN0IG5ldHdvcmsgJ3dhbjYnCiAgICBvcHRpb24gaW5wdXQgJ1JFSkVDVCcKICAgIG9wdGlvbiBvdXRwdXQgJ0FDQ0VQVCcKICAgIG9wdGlvbiBmb3J3YXJkICdSRUpFQ1QnCiAgICBvcHRpb24gbWFzcSAnMScKICAgIG9wdGlvbiBtdHVfZml4ICcxJwoKY29uZmlnIGZvcndhcmRpbmcKICAgIG9wdGlvbiBzcmMgJ2xhbicKICAgIG9wdGlvbiBkZXN0ICd3YW4nCg=="
 
 jobs:
   modify:
@@ -18,16 +20,16 @@ jobs:
     
     steps:
     - name: Install Dependencies
-      run: sudo apt-get update && sudo apt-get install -y squashfs-tools tar wget curl gzip xz-utils
+      run: sudo apt-get update ; sudo apt-get install -y squashfs-tools tar wget curl gzip xz-utils
 
     - name: Download Firmware
-      run: wget -O original.bin "${{ github.event.inputs.firmware_url }}" && ls -lh original.bin
+      run: wget -O original.bin "${{ github.event.inputs.firmware_url }}" ; ls -lh original.bin
 
     - name: Extract Firmware
-      run: mkdir -p firmware_work && cd firmware_work && cp ../original.bin . && tar -xf original.bin && ls -la
+      run: mkdir -p firmware_work ; cd firmware_work ; cp ../original.bin . ; tar -xf original.bin ; ls -la
 
     - name: Extract SquashFS
-      run: cd firmware_work && mkdir -p rootfs && unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root 2>&1 || true && ls -la rootfs/
+      run: cd firmware_work ; mkdir -p rootfs ; unsquashfs -f -d rootfs sysupgrade-xiaomi_r3d/root 2>&1 || true ; ls -la rootfs/
 
     - name: Show and Modify Configs
       run: |
@@ -37,48 +39,7 @@ jobs:
         echo ""
         
         echo "=== Creating network config ==="
-        echo "config interface 'loopback'" > rootfs/etc/config/network
-        echo "    option device 'lo'" >> rootfs/etc/config/network
-        echo "    option proto 'static'" >> rootfs/etc/config/network
-        echo "    option ipaddr '127.0.0.1'" >> rootfs/etc/config/network
-        echo "    option netmask '255.0.0.0'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config globals 'globals'" >> rootfs/etc/config/network
-        echo "    option ula_prefix 'auto'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config interface 'wan'" >> rootfs/etc/config/network
-        echo "    option device 'eth0'" >> rootfs/etc/config/network
-        echo "    option proto 'dhcp'" >> rootfs/etc/config/network
-        echo "    option ipv6 'auto'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config interface 'wan6'" >> rootfs/etc/config/network
-        echo "    option device '@wan'" >> rootfs/etc/config/network
-        echo "    option proto 'dhcpv6'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config interface 'lan'" >> rootfs/etc/config/network
-        echo "    option device 'br-lan'" >> rootfs/etc/config/network
-        echo "    option proto 'static'" >> rootfs/etc/config/network
-        echo "    option ipaddr '192.168.1.1'" >> rootfs/etc/config/network
-        echo "    option netmask '255.255.255.0'" >> rootfs/etc/config/network
-        echo "    option ip6assign '60'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config device" >> rootfs/etc/config/network
-        echo "    option name 'br-lan'" >> rootfs/etc/config/network
-        echo "    option type 'bridge'" >> rootfs/etc/config/network
-        echo "    list ports 'eth1'" >> rootfs/etc/config/network
-        echo "    list ports 'eth2'" >> rootfs/etc/config/network
-        echo "    list ports 'eth3'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config dhcp 'lan'" >> rootfs/etc/config/network
-        echo "    option interface 'lan'" >> rootfs/etc/config/network
-        echo "    option start '100'" >> rootfs/etc/config/network
-        echo "    option limit '150'" >> rootfs/etc/config/network
-        echo "    option leasetime '12h'" >> rootfs/etc/config/network
-        echo "    option ignore '0'" >> rootfs/etc/config/network
-        echo "" >> rootfs/etc/config/network
-        echo "config dhcp 'wan'" >> rootfs/etc/config/network
-        echo "    option interface 'wan'" >> rootfs/etc/config/network
-        echo "    option ignore '1'" >> rootfs/etc/config/network
+        echo "${NETWORK_CONFIG_BASE64}" | base64 -d > rootfs/etc/config/network
         
         echo ""
         echo "=== New network config ==="
@@ -86,51 +47,26 @@ jobs:
         
         echo ""
         echo "=== Creating firewall config ==="
-        echo "config defaults" > rootfs/etc/config/firewall
-        echo "    option syn_flood '1'" >> rootfs/etc/config/firewall
-        echo "    option input 'REJECT'" >> rootfs/etc/config/firewall
-        echo "    option output 'ACCEPT'" >> rootfs/etc/config/firewall
-        echo "    option forward 'REJECT'" >> rootfs/etc/config/firewall
-        echo "" >> rootfs/etc/config/firewall
-        echo "config zone" >> rootfs/etc/config/firewall
-        echo "    option name 'lan'" >> rootfs/etc/config/firewall
-        echo "    list network 'lan'" >> rootfs/etc/config/firewall
-        echo "    option input 'ACCEPT'" >> rootfs/etc/config/firewall
-        echo "    option output 'ACCEPT'" >> rootfs/etc/config/firewall
-        echo "    option forward 'ACCEPT'" >> rootfs/etc/config/firewall
-        echo "" >> rootfs/etc/config/firewall
-        echo "config zone" >> rootfs/etc/config/firewall
-        echo "    option name 'wan'" >> rootfs/etc/config/firewall
-        echo "    list network 'wan'" >> rootfs/etc/config/firewall
-        echo "    list network 'wan6'" >> rootfs/etc/config/firewall
-        echo "    option input 'REJECT'" >> rootfs/etc/config/firewall
-        echo "    option output 'ACCEPT'" >> rootfs/etc/config/firewall
-        echo "    option forward 'REJECT'" >> rootfs/etc/config/firewall
-        echo "    option masq '1'" >> rootfs/etc/config/firewall
-        echo "    option mtu_fix '1'" >> rootfs/etc/config/firewall
-        echo "" >> rootfs/etc/config/firewall
-        echo "config forwarding" >> rootfs/etc/config/firewall
-        echo "    option src 'lan'" >> rootfs/etc/config/firewall
-        echo "    option dest 'wan'" >> rootfs/etc/config/firewall
+        echo "${FIREWALL_CONFIG_BASE64}" | base64 -d > rootfs/etc/config/firewall
         
         echo ""
         echo "=== New firewall config ==="
         cat rootfs/etc/config/firewall
 
     - name: Repack Firmware
-      run: cd firmware_work && mksquashfs rootfs new_rootfs.squashfs -comp xz -b 262144 && mkdir -p sysupgrade-xiaomi_r3d && mv new_rootfs.squashfs sysupgrade-xiaomi_r3d/root && tar -cf "../$OUTPUT_FIRMWARE" sysupgrade-xiaomi_r3d/ && cd .. && ls -lh "$OUTPUT_FIRMWARE"
+      run: cd firmware_work ; mksquashfs rootfs new_rootfs.squashfs -comp xz -b 262144 ; mkdir -p sysupgrade-xiaomi_r3d ; mv new_rootfs.squashfs sysupgrade-xiaomi_r3d/root ; tar -cf "../$OUTPUT_FIRMWARE" sysupgrade-xiaomi_r3d/ ; cd .. ; ls -lh "$OUTPUT_FIRMWARE"
 
     - name: Generate Checksum
-      run: sha256sum "$OUTPUT_FIRMWARE" > "${OUTPUT_FIRMWARE}.sha256" && cat "${OUTPUT_FIRMWARE}.sha256"
+      run: sha256sum "$OUTPUT_FIRMWARE" > "${OUTPUT_FIRMWARE}.sha256" ; cat "${OUTPUT_FIRMWARE}.sha256"
 
     - name: Upload Firmware
       uses: actions/upload-artifact@v4
       with:
-        name: kwrt-router-mode-firmware-v3
+        name: kwrt-router-mode-firmware-v4
         path: |
           ${{ env.OUTPUT_FIRMWARE }}
           ${{ env.OUTPUT_FIRMWARE }}.sha256
         retention-days: 30
 
     - name: Summary
-      run: ls -lh "$OUTPUT_FIRMWARE" && cat "${OUTPUT_FIRMWARE}.sha256"
+      run: ls -lh "$OUTPUT_FIRMWARE" ; cat "${OUTPUT_FIRMWARE}.sha256"
