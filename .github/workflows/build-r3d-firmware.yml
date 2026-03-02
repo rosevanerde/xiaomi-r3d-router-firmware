@@ -64,196 +64,185 @@ jobs:
         mkdir -p files/etc/uci-defaults
 
         # Network configuration - Router Mode
-        cat > files/etc/config/network << 'EOF'
-config interface 'loopback'
-    option device 'lo'
-    option proto 'static'
-    option ipaddr '127.0.0.1'
-    option netmask '255.0.0.0'
-
-config globals 'globals'
-    option ula_prefix 'auto'
-
-config interface 'wan'
-    option device 'eth0'
-    option proto 'dhcp'
-    option ipv6 'auto'
-
-config interface 'wan6'
-    option device '@wan'
-    option proto 'dhcpv6'
-
-config interface 'lan'
-    option device 'br-lan'
-    option proto 'static'
-    option ipaddr '192.168.1.1'
-    option netmask '255.255.255.0'
-    option ip6assign '60'
-
-config device
-    option name 'br-lan'
-    option type 'bridge'
-    list ports 'eth1'
-    list ports 'eth2'
-    list ports 'eth3'
-
-config dhcp 'lan'
-    option interface 'lan'
-    option start '100'
-    option limit '150'
-    option leasetime '12h'
-    option dhcpv4 'server'
-    option dhcpv6 'server'
-    option ra 'server'
-    list ra_flags 'managed-config'
-    list ra_flags 'other-config'
-
-config dhcp 'wan'
-    option interface 'wan'
-    option ignore '1'
-
-config odhcpd 'odhcpd'
-    option maindhcp '0'
-    option leasefile '/tmp/hosts/odhcpd'
-    option leasetrigger '/usr/sbin/odhcpd-update'
-    option loglevel '4'
-EOF
+        echo "config interface 'loopback'" > files/etc/config/network
+        echo "    option device 'lo'" >> files/etc/config/network
+        echo "    option proto 'static'" >> files/etc/config/network
+        echo "    option ipaddr '127.0.0.1'" >> files/etc/config/network
+        echo "    option netmask '255.0.0.0'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config globals 'globals'" >> files/etc/config/network
+        echo "    option ula_prefix 'auto'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config interface 'wan'" >> files/etc/config/network
+        echo "    option device 'eth0'" >> files/etc/config/network
+        echo "    option proto 'dhcp'" >> files/etc/config/network
+        echo "    option ipv6 'auto'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config interface 'wan6'" >> files/etc/config/network
+        echo "    option device '@wan'" >> files/etc/config/network
+        echo "    option proto 'dhcpv6'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config interface 'lan'" >> files/etc/config/network
+        echo "    option device 'br-lan'" >> files/etc/config/network
+        echo "    option proto 'static'" >> files/etc/config/network
+        echo "    option ipaddr '192.168.1.1'" >> files/etc/config/network
+        echo "    option netmask '255.255.255.0'" >> files/etc/config/network
+        echo "    option ip6assign '60'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config device" >> files/etc/config/network
+        echo "    option name 'br-lan'" >> files/etc/config/network
+        echo "    option type 'bridge'" >> files/etc/config/network
+        echo "    list ports 'eth1'" >> files/etc/config/network
+        echo "    list ports 'eth2'" >> files/etc/config/network
+        echo "    list ports 'eth3'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config dhcp 'lan'" >> files/etc/config/network
+        echo "    option interface 'lan'" >> files/etc/config/network
+        echo "    option start '100'" >> files/etc/config/network
+        echo "    option limit '150'" >> files/etc/config/network
+        echo "    option leasetime '12h'" >> files/etc/config/network
+        echo "    option dhcpv4 'server'" >> files/etc/config/network
+        echo "    option dhcpv6 'server'" >> files/etc/config/network
+        echo "    option ra 'server'" >> files/etc/config/network
+        echo "    list ra_flags 'managed-config'" >> files/etc/config/network
+        echo "    list ra_flags 'other-config'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config dhcp 'wan'" >> files/etc/config/network
+        echo "    option interface 'wan'" >> files/etc/config/network
+        echo "    option ignore '1'" >> files/etc/config/network
+        echo "" >> files/etc/config/network
+        echo "config odhcpd 'odhcpd'" >> files/etc/config/network
+        echo "    option maindhcp '0'" >> files/etc/config/network
+        echo "    option leasefile '/tmp/hosts/odhcpd'" >> files/etc/config/network
+        echo "    option leasetrigger '/usr/sbin/odhcpd-update'" >> files/etc/config/network
+        echo "    option loglevel '4'" >> files/etc/config/network
 
         # Firewall configuration
-        cat > files/etc/config/firewall << 'EOF'
-config defaults
-    option syn_flood '1'
-    option input 'REJECT'
-    option output 'ACCEPT'
-    option forward 'REJECT'
-
-config zone
-    option name 'lan'
-    list network 'lan'
-    option input 'ACCEPT'
-    option output 'ACCEPT'
-    option forward 'ACCEPT'
-
-config zone
-    option name 'wan'
-    list network 'wan'
-    list network 'wan6'
-    option input 'REJECT'
-    option output 'ACCEPT'
-    option forward 'REJECT'
-    option masq '1'
-    option mtu_fix '1'
-
-config forwarding
-    option src 'lan'
-    option dest 'wan'
-
-config rule
-    option name 'Allow-DHCP-Renew'
-    option src 'wan'
-    option proto 'udp'
-    option dest_port '68'
-    option target 'ACCEPT'
-    option family 'ipv4'
-
-config rule
-    option name 'Allow-Ping'
-    option src 'wan'
-    option proto 'icmp'
-    option icmp_type 'echo-request'
-    option family 'ipv4'
-    option target 'ACCEPT'
-
-config include
-    option path '/etc/firewall.user'
-EOF
+        echo "config defaults" > files/etc/config/firewall
+        echo "    option syn_flood '1'" >> files/etc/config/firewall
+        echo "    option input 'REJECT'" >> files/etc/config/firewall
+        echo "    option output 'ACCEPT'" >> files/etc/config/firewall
+        echo "    option forward 'REJECT'" >> files/etc/config/firewall
+        echo "" >> files/etc/config/firewall
+        echo "config zone" >> files/etc/config/firewall
+        echo "    option name 'lan'" >> files/etc/config/firewall
+        echo "    list network 'lan'" >> files/etc/config/firewall
+        echo "    option input 'ACCEPT'" >> files/etc/config/firewall
+        echo "    option output 'ACCEPT'" >> files/etc/config/firewall
+        echo "    option forward 'ACCEPT'" >> files/etc/config/firewall
+        echo "" >> files/etc/config/firewall
+        echo "config zone" >> files/etc/config/firewall
+        echo "    option name 'wan'" >> files/etc/config/firewall
+        echo "    list network 'wan'" >> files/etc/config/firewall
+        echo "    list network 'wan6'" >> files/etc/config/firewall
+        echo "    option input 'REJECT'" >> files/etc/config/firewall
+        echo "    option output 'ACCEPT'" >> files/etc/config/firewall
+        echo "    option forward 'REJECT'" >> files/etc/config/firewall
+        echo "    option masq '1'" >> files/etc/config/firewall
+        echo "    option mtu_fix '1'" >> files/etc/config/firewall
+        echo "" >> files/etc/config/firewall
+        echo "config forwarding" >> files/etc/config/firewall
+        echo "    option src 'lan'" >> files/etc/config/firewall
+        echo "    option dest 'wan'" >> files/etc/config/firewall
+        echo "" >> files/etc/config/firewall
+        echo "config rule" >> files/etc/config/firewall
+        echo "    option name 'Allow-DHCP-Renew'" >> files/etc/config/firewall
+        echo "    option src 'wan'" >> files/etc/config/firewall
+        echo "    option proto 'udp'" >> files/etc/config/firewall
+        echo "    option dest_port '68'" >> files/etc/config/firewall
+        echo "    option target 'ACCEPT'" >> files/etc/config/firewall
+        echo "    option family 'ipv4'" >> files/etc/config/firewall
+        echo "" >> files/etc/config/firewall
+        echo "config rule" >> files/etc/config/firewall
+        echo "    option name 'Allow-Ping'" >> files/etc/config/firewall
+        echo "    option src 'wan'" >> files/etc/config/firewall
+        echo "    option proto 'icmp'" >> files/etc/config/firewall
+        echo "    option icmp_type 'echo-request'" >> files/etc/config/firewall
+        echo "    option family 'ipv4'" >> files/etc/config/firewall
+        echo "    option target 'ACCEPT'" >> files/etc/config/firewall
+        echo "" >> files/etc/config/firewall
+        echo "config include" >> files/etc/config/firewall
+        echo "    option path '/etc/firewall.user'" >> files/etc/config/firewall
 
         # System configuration
-        cat > files/etc/config/system << 'EOF'
-config system
-    option hostname 'Xiaomi-R3D'
-    option timezone 'CST-8'
-    option zonename 'Asia/Shanghai'
-    option ttylogin '0'
-    option log_size '64'
-    option urandom_seed '0'
-
-config timeserver 'ntp'
-    option enabled '1'
-    option enable_server '0'
-    list server 'ntp.aliyun.com'
-    list server 'time1.cloud.tencent.com'
-    list server 'cn.ntp.org.cn'
-EOF
+        echo "config system" > files/etc/config/system
+        echo "    option hostname 'Xiaomi-R3D'" >> files/etc/config/system
+        echo "    option timezone 'CST-8'" >> files/etc/config/system
+        echo "    option zonename 'Asia/Shanghai'" >> files/etc/config/system
+        echo "    option ttylogin '0'" >> files/etc/config/system
+        echo "    option log_size '64'" >> files/etc/config/system
+        echo "    option urandom_seed '0'" >> files/etc/config/system
+        echo "" >> files/etc/config/system
+        echo "config timeserver 'ntp'" >> files/etc/config/system
+        echo "    option enabled '1'" >> files/etc/config/system
+        echo "    option enable_server '0'" >> files/etc/config/system
+        echo "    list server 'ntp.aliyun.com'" >> files/etc/config/system
+        echo "    list server 'time1.cloud.tencent.com'" >> files/etc/config/system
+        echo "    list server 'cn.ntp.org.cn'" >> files/etc/config/system
 
         # First boot script - Router Mode
-        cat > files/etc/uci-defaults/99-router-mode << 'EOF'
-#!/bin/sh
-sleep 3
-if [ ! -f /etc/.router_mode_configured ]; then
-    uci set system.@system[0].hostname='Xiaomi-R3D'
-    uci set system.@system[0].timezone='CST-8'
-    uci set system.@system[0].zonename='Asia/Shanghai'
-    
-    uci set network.wan=interface
-    uci set network.wan.proto='dhcp'
-    uci set network.wan.device='eth0'
-    uci set network.wan.ipv6='auto'
-    
-    uci set network.wan6=interface
-    uci set network.wan6.device='@wan'
-    uci set network.wan6.proto='dhcpv6'
-    
-    uci set network.lan.proto='static'
-    uci set network.lan.ipaddr='192.168.1.1'
-    uci set network.lan.netmask='255.255.255.0'
-    uci set network.lan.device='br-lan'
-    
-    uci set dhcp.lan.ignore='0'
-    uci set dhcp.lan.start='100'
-    uci set dhcp.lan.limit='150'
-    uci set dhcp.lan.leasetime='12h'
-    
-    uci set firewall.@zone[1].masq='1'
-    uci set firewall.@forwarding[0].src='lan'
-    uci set firewall.@forwarding[0].dest='wan'
-    
-    if [ -f /etc/config/wireless ]; then
-        uci set wireless.radio0.disabled='0'
-        uci set wireless.radio1.disabled='0'
-        uci set wireless.@wifi-iface[0].ssid='Xiaomi_R3D_5G'
-        uci set wireless.@wifi-iface[0].encryption='psk2'
-        uci set wireless.@wifi-iface[0].key='12345678'
-        uci set wireless.@wifi-iface[1].ssid='Xiaomi_R3D_2.4G'
-        uci set wireless.@wifi-iface[1].encryption='psk2'
-        uci set wireless.@wifi-iface[1].key='12345678'
-        uci commit wireless
-    fi
-    
-    uci commit system
-    uci commit network
-    uci commit dhcp
-    uci commit firewall
-    
-    passwd -d root
-    
-    # 配置中科大镜像源
-    cat > /etc/opkg/distfeeds.conf << 'OPKG_EOF'
-src/gz openwrt_core https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/targets/ipq806x/generic/packages
-src/gz openwrt_base https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/base
-src/gz openwrt_luci https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/luci
-src/gz openwrt_packages https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/packages
-src/gz openwrt_routing https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/routing
-OPKG_EOF
-    
-    touch /etc/.router_mode_configured
-    
-    /etc/init.d/system restart
-    /etc/init.d/network restart
-    /etc/init.d/firewall restart
-    /etc/init.d/dnsmasq restart
-fi
-EOF
+        echo "#!/bin/sh" > files/etc/uci-defaults/99-router-mode
+        echo "sleep 3" >> files/etc/uci-defaults/99-router-mode
+        echo "if [ ! -f /etc/.router_mode_configured ]; then" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set system.@system[0].hostname='Xiaomi-R3D'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set system.@system[0].timezone='CST-8'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set system.@system[0].zonename='Asia/Shanghai'" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan=interface" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan.proto='dhcp'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan.device='eth0'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan.ipv6='auto'" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan6=interface" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan6.device='@wan'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.wan6.proto='dhcpv6'" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.lan.proto='static'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.lan.ipaddr='192.168.1.1'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.lan.netmask='255.255.255.0'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.lan.device='br-lan'" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set dhcp.lan.ignore='0'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set dhcp.lan.start='100'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set dhcp.lan.limit='150'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set dhcp.lan.leasetime='12h'" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set firewall.@zone[1].masq='1'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set firewall.@forwarding[0].src='lan'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set firewall.@forwarding[0].dest='wan'" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    if [ -f /etc/config/wireless ]; then" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.radio0.disabled='0'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.radio1.disabled='0'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.@wifi-iface[0].ssid='Xiaomi_R3D_5G'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.@wifi-iface[0].encryption='psk2'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.@wifi-iface[0].key='12345678'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.@wifi-iface[1].ssid='Xiaomi_R3D_2.4G'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.@wifi-iface[1].encryption='psk2'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci set wireless.@wifi-iface[1].key='12345678'" >> files/etc/uci-defaults/99-router-mode
+        echo "        uci commit wireless" >> files/etc/uci-defaults/99-router-mode
+        echo "    fi" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    uci commit system" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci commit network" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci commit dhcp" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci commit firewall" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    passwd -d root" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    echo 'src/gz openwrt_core https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/targets/ipq806x/generic/packages' > /etc/opkg/distfeeds.conf" >> files/etc/uci-defaults/99-router-mode
+        echo "    echo 'src/gz openwrt_base https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/base' >> /etc/opkg/distfeeds.conf" >> files/etc/uci-defaults/99-router-mode
+        echo "    echo 'src/gz openwrt_luci https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/luci' >> /etc/opkg/distfeeds.conf" >> files/etc/uci-defaults/99-router-mode
+        echo "    echo 'src/gz openwrt_packages https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/packages' >> /etc/opkg/distfeeds.conf" >> files/etc/uci-defaults/99-router-mode
+        echo "    echo 'src/gz openwrt_routing https://mirrors.ustc.edu.cn/openwrt/releases/23.05.5/packages/arm_cortex-a15_neon-vfpv4/routing' >> /etc/opkg/distfeeds.conf" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    touch /etc/.router_mode_configured" >> files/etc/uci-defaults/99-router-mode
+        echo "    " >> files/etc/uci-defaults/99-router-mode
+        echo "    /etc/init.d/system restart" >> files/etc/uci-defaults/99-router-mode
+        echo "    /etc/init.d/network restart" >> files/etc/uci-defaults/99-router-mode
+        echo "    /etc/init.d/firewall restart" >> files/etc/uci-defaults/99-router-mode
+        echo "    /etc/init.d/dnsmasq restart" >> files/etc/uci-defaults/99-router-mode
+        echo "fi" >> files/etc/uci-defaults/99-router-mode
         chmod +x files/etc/uci-defaults/99-router-mode
 
     - name: Build Firmware
@@ -282,30 +271,28 @@ EOF
 
     - name: Generate README
       run: |
-        cat > output/README.md << 'EOF'
-        # 小米 R3D 路由模式固件
-
-        ## 默认配置
-        - LAN IP: 192.168.1.1
-        - WAN 模式: DHCP 客户端
-        - DHCP 服务器: 启用 (地址池: 192.168.1.100-250)
-        - WiFi SSID: Xiaomi_R3D_5G / Xiaomi_R3D_2.4G
-        - WiFi 密码: 12345678
-        - 管理密码: 空（首次登录无需密码）
-
-        ## 刷机步骤
-        1. 通过 SSH 登录原系统
-        2. 上传固件到 /tmp 目录
-        3. 执行: `sysupgrade -n /tmp/openwrt-${{ env.OPENWRT_VERSION }}-r3d-router-mode-sysupgrade.bin`
-        4. 等待重启完成（约 2-3 分钟）
-
-        ## 固件特点
-        - 预配置为路由模式
-        - 恢复出厂设置后保持路由模式
-        - 首次启动自动配置
-        - 内置中文语言包
-        - WiFi 默认启用
-        EOF
+        echo "# 小米 R3D 路由模式固件" > output/README.md
+        echo "" >> output/README.md
+        echo "## 默认配置" >> output/README.md
+        echo "- LAN IP: 192.168.1.1" >> output/README.md
+        echo "- WAN 模式: DHCP 客户端" >> output/README.md
+        echo "- DHCP 服务器: 启用 (地址池: 192.168.1.100-250)" >> output/README.md
+        echo "- WiFi SSID: Xiaomi_R3D_5G / Xiaomi_R3D_2.4G" >> output/README.md
+        echo "- WiFi 密码: 12345678" >> output/README.md
+        echo "- 管理密码: 空（首次登录无需密码）" >> output/README.md
+        echo "" >> output/README.md
+        echo "## 刷机步骤" >> output/README.md
+        echo "1. 通过 SSH 登录原系统" >> output/README.md
+        echo "2. 上传固件到 /tmp 目录" >> output/README.md
+        echo "3. 执行: sysupgrade -n /tmp/openwrt-${{ env.OPENWRT_VERSION }}-r3d-router-mode-sysupgrade.bin" >> output/README.md
+        echo "4. 等待重启完成（约 2-3 分钟）" >> output/README.md
+        echo "" >> output/README.md
+        echo "## 固件特点" >> output/README.md
+        echo "- 预配置为路由模式" >> output/README.md
+        echo "- 恢复出厂设置后保持路由模式" >> output/README.md
+        echo "- 首次启动自动配置" >> output/README.md
+        echo "- 内置中文语言包" >> output/README.md
+        echo "- WiFi 默认启用" >> output/README.md
 
     - name: Upload Firmware
       uses: actions/upload-artifact@v4
@@ -335,9 +322,7 @@ EOF
           - 内置中文语言包
           
           ### 刷机
-          ```bash
           sysupgrade -n /tmp/openwrt-${{ env.OPENWRT_VERSION }}-r3d-router-mode-sysupgrade.bin
-          ```
         files: output/*
         draft: false
         prerelease: false
