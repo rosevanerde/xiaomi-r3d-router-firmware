@@ -18,10 +18,10 @@ on:
           - '23.05.3'
 
 env:
-  OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || '24.10.5' }}
+  OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || '23.05.5' }}
   TARGET: ipq806x
   SUBTARGET: generic
-  PROFILE: xiaomi_r3d
+  PROFILE: miwifi_r3d
 
 jobs:
   build:
