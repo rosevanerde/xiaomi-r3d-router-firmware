@@ -18,7 +18,7 @@ on:
           - '23.05.3'
 
 env:
-  OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || '23.05.5' }}
+  OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version || '24.10.5' }}
   TARGET: ipq806x
   SUBTARGET: generic
   PROFILE: xiaomi_r3d
@@ -77,6 +77,7 @@ jobs:
         echo "    option device 'eth0'" >> files/etc/config/network
         echo "    option proto 'dhcp'" >> files/etc/config/network
         echo "    option ipv6 'auto'" >> files/etc/config/network
+        echo "    option macaddr '40:31:3C:D8:6E:12'" >> files/etc/config/network
         echo "" >> files/etc/config/network
         echo "config interface 'wan6'" >> files/etc/config/network
         echo "    option device '@wan'" >> files/etc/config/network
@@ -198,7 +199,7 @@ jobs:
         echo "    uci set network.wan6.proto='dhcpv6'" >> files/etc/uci-defaults/99-router-mode
         echo "    " >> files/etc/uci-defaults/99-router-mode
         echo "    uci set network.lan.proto='static'" >> files/etc/uci-defaults/99-router-mode
-        echo "    uci set network.lan.ipaddr='192.168.1.1'" >> files/etc/uci-defaults/99-router-mode
+        echo "    uci set network.lan.ipaddr='192.168.4.1'" >> files/etc/uci-defaults/99-router-mode
         echo "    uci set network.lan.netmask='255.255.255.0'" >> files/etc/uci-defaults/99-router-mode
         echo "    uci set network.lan.device='br-lan'" >> files/etc/uci-defaults/99-router-mode
         echo "    " >> files/etc/uci-defaults/99-router-mode
@@ -274,9 +275,9 @@ jobs:
         echo "# 小米 R3D 路由模式固件" > output/README.md
         echo "" >> output/README.md
         echo "## 默认配置" >> output/README.md
-        echo "- LAN IP: 192.168.1.1" >> output/README.md
+        echo "- LAN IP: 192.168.4.1" >> output/README.md
         echo "- WAN 模式: DHCP 客户端" >> output/README.md
-        echo "- DHCP 服务器: 启用 (地址池: 192.168.1.100-250)" >> output/README.md
+        echo "- DHCP 服务器: 启用 (地址池: 192.168.4.100-250)" >> output/README.md
         echo "- WiFi SSID: Xiaomi_R3D_5G / Xiaomi_R3D_2.4G" >> output/README.md
         echo "- WiFi 密码: 12345678" >> output/README.md
         echo "- 管理密码: 空（首次登录无需密码）" >> output/README.md
@@ -311,7 +312,7 @@ jobs:
           ## 小米 R3D 路由模式固件
           
           ### 默认配置
-          - LAN IP: 192.168.1.1
+          - LAN IP: 192.168.4.1
           - WAN 模式: DHCP 客户端
           - DHCP 服务器: 启用
           - WiFi: 默认启用
