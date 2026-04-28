@@ -11,6 +11,7 @@ config interface 'wan'
     option device 'eth0'
     option proto 'dhcp'
     option ipv6 'auto'
+    option macaddr '40:31:3C:D8:6E:12'
 
 config interface 'wan6'
     option device '@wan'
